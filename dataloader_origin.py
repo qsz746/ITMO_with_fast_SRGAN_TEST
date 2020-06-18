@@ -21,10 +21,15 @@ class DataLoader(object):
         self.lr_image_paths = []
         self.hr_image_paths = []
 
-        for d in [d for d in os.listdir(lr_image_dir) if os.path.isdir(os.path.join(lr_image_dir, d))]:
-            self.lr_image_paths += [os.path.join(lr_image_dir, d, "SDR", i) for i in sorted(os.listdir(os.path.join(lr_image_dir, d, "SDR")))]
-            self.hr_image_paths += [os.path.join(hr_image_dir, d, "HDR", i) for i in sorted(os.listdir(os.path.join(hr_image_dir, d, "HDR")))]
-
+        for d in os.listdir(lr_image_dir):
+            if d[:-2]+"8K" in os.listdir(hr_image_dir): #and d[:3] not in ["c02", "c14"]:
+                list4K = os.listdir(os.path.join(lr_image_dir, d))
+                list8K = os.listdir(os.path.join(hr_image_dir, d[:-2]+"8K"))
+                for i in list4K:
+                    if i[:-6]+"8K.exr" in list8K:
+                        self.lr_image_paths.append(os.path.join(lr_image_dir, d, i))
+                        self.hr_image_paths.append(os.path.join(hr_image_dir, d[:-2]+"8K", i[:-6]+"8K.exr"))
+        
         with open('train.txt', 'w') as f:
             for i in self.lr_image_paths[:int(len(self.lr_image_paths)*0.9)]:
                 f.write('%s\n' % i)
@@ -84,7 +89,7 @@ class DataLoader(object):
         """
 
         #image = tf.image.random_crop(image, [self.image_size, self.image_size, 3])
-        #image = tf.image.random_crop(image, [self.hr_image_size, self.hr_image_size, 3])
+        
         lr_h=array_ops.shape(low_res)[0]-self.lr_image_size
         lr_w=array_ops.shape(low_res)[1]-self.lr_image_size
         offset_h=tf.random.uniform([1],0,lr_h,dtype=tf.int32, seed=None)[0]  
@@ -96,6 +101,7 @@ class DataLoader(object):
         offset_w_highres=int(offset_w* self.hr_image_size/self.lr_image_size)
         high_res = tf.image.crop_to_bounding_box(high_res, offset_h_highres, offset_w_highres, self.hr_image_size,
                                                  self.hr_image_size)
+        
         return low_res, high_res
 
     def _high_low_res_pairs(self, high_res):
@@ -110,7 +116,7 @@ class DataLoader(object):
         """
 
         low_res = tf.image.resize(high_res, 
-                                  [self.hr_image_size// 2, self.hr_image_size // 2], 
+                                  [self.image_size // 4, self.image_size // 4], 
                                   method='bicubic')
 
         return low_res, high_res

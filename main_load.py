@@ -3,6 +3,8 @@ from dataloader import DataLoader
 from model import FastSRGAN
 import tensorflow as tf
 import os
+from tensorflow import keras
+from datetime import datetime
 
 parser = ArgumentParser()
 parser.add_argument('--lr_image_dir', type=str, help='Path to low resolution image directory.')
@@ -17,6 +19,7 @@ parser.add_argument('--save_iter', default=50, type=int,
 
 parser.add_argument('--dis', type=str, help='Load pre-trained discriminator.')
 parser.add_argument('--gen', type=str, help='Load pre-trained generator.')
+
 
 @tf.function
 def pretrain_step(model, x, y):
@@ -117,7 +120,6 @@ def train(model, dataset, log_iter, writer):
         # Iterate over dataset
         for x, y in dataset:
             disc_loss, adv_loss, content_loss, mse_loss = train_step(model, x, y)
-
             # Log tensorboard summaries if log iteration is reached.
             if model.iterations % log_iter == 0:
                 tf.summary.scalar('Adversarial Loss', adv_loss, step=model.iterations)
@@ -128,8 +130,9 @@ def train(model, dataset, log_iter, writer):
                 tf.summary.image('High Res', tf.cast(255 * (y + 1.0) / 2.0, tf.uint8), step=model.iterations)
                 tf.summary.image('Generated', tf.cast(255 * (model.generator.predict(x) + 1.0) / 2.0, tf.uint8),
                                  step=model.iterations)
-                model.generator.save('models/' + str(model.iterations) + '_generator.h5')
-                model.discriminator.save('models/' + str(model.iterations) + '_discriminator.h5')
+                tm = datetime.now().strftime("%Y%m%d%H%M%S")
+                model.generator.save('models/' + tm + "_" + str(model.iterations) + '_generator.h5')
+                model.discriminator.save('models/' + tm + "_" + str(model.iterations) + '_discriminator.h5')
                 writer.flush()
             model.iterations += 1
 
@@ -148,11 +151,18 @@ def main():
     # Initialize the GAN object.
     gan = FastSRGAN(args)
 
+    if args.dis != None and args.gen != None:
+        print("Loading pre-trained generator...")
+        gan.generator = keras.models.load_model(args.gen)
+        print("Loading pre-trained discriminator...")
+        gan.discriminator = keras.models.load_model(args.dis)
+    else:
+        print("No pre-trained model...")
     # Define the directory for saving pretrainig loss tensorboard summary.
-    pretrain_summary_writer = tf.summary.create_file_writer('logs/pretrain')
+        pretrain_summary_writer = tf.summary.create_file_writer('logs/pretrain')
 
     # Run pre-training.
-    pretrain_generator(gan, ds, pretrain_summary_writer)
+        pretrain_generator(gan, ds, pretrain_summary_writer)
 
     # Define the directory for saving the SRGAN training tensorbaord summary.
     train_summary_writer = tf.summary.create_file_writer('logs/train')
