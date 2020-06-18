@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="JAVA_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <output url="file://git@github.com:qsz746/ITMO_with_fast_SRGAN_TEST.git" />
+    <output-test url="file://$MODULE_DIR$/out/test/Fast-SRGAN-ITMO_share" />
+    <exclude-output />
+    <content url="file://$MODULE_DIR$" />
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+</module>
